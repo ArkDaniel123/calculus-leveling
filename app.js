@@ -145,7 +145,7 @@ function renderDashboard() {
 
     return `
     <div class="relative panel rounded-sm p-6 transition-all duration-300
-      ${isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:glow-cyan-intense'}
+      ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:glow-cyan-intense'}
       ${isExam && !isLocked ? 'border-pink-500/60' : ''}"
       style="${isExam && !isLocked ? 'box-shadow:0 0 30px rgba(236,72,153,0.3)' : ''}"
       ${isLocked ? '' : `onclick="openModule('${mod.id}')"`}>
@@ -176,8 +176,9 @@ function renderDashboard() {
         </div>
       </div>
 
-      ${isLocked ? `<div class="absolute inset-0 flex items-center justify-center rounded-sm">
-        <span class="font-orbitron text-xs text-slate-500 tracking-widest">[ BLOQUEADO ]</span>
+      ${isLocked ? `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-sm bg-slate-950/95 backdrop-blur-[1px]">
+        <span class="text-3xl" style="opacity:.4">🔒</span>
+        <span class="font-orbitron text-xs text-slate-600 tracking-widest">BLOQUEADO</span>
       </div>` : ''}
     </div>`;
   }).join('');
@@ -269,7 +270,7 @@ function renderSkillTree() {
           ${completed ? `<div class="absolute -top-1 -right-1 w-5 h-5 bg-cyan-500 rounded-full flex items-center justify-center text-xs text-black font-bold">✓</div>` : ''}
           ${state === 'available' ? `<div class="absolute inset-0 rounded-full border border-cyan-400/30 animate-ping" style="animation-duration:2s"></div>` : ''}
         </div>
-        <div class="mt-2 text-center max-w-28">
+        <div class="mt-2 text-center max-w-[130px]">
           <p class="font-orbitron text-xs font-bold ${state === 'locked' ? 'text-slate-600' : 'text-cyan-300'} leading-tight">${skill.title}</p>
           <p class="font-mono-tech text-xs ${state === 'locked' ? 'text-slate-700' : 'text-slate-500'} mt-0.5">
             ${doneLessons}/${skill.lessons.length} · ${skill.xp}XP
