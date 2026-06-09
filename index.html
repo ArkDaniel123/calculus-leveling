@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculus Leveling System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cyan: #00e5ff;
+      --cyan-dim: rgba(0,229,255,0.15);
+      --cyan-border: rgba(0,229,255,0.4);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: #020817;
+      font-family: 'Rajdhani', sans-serif;
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    .font-mono-tech { font-family: 'Share Tech Mono', monospace; }
+
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .bg-radial {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,60,120,0.4) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .glow-cyan { box-shadow: 0 0 20px rgba(0,229,255,0.3), 0 0 60px rgba(0,229,255,0.1); }
+    .glow-cyan-intense { box-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 80px rgba(0,229,255,0.2); }
+    .text-glow { text-shadow: 0 0 20px rgba(0,229,255,0.8), 0 0 40px rgba(0,229,255,0.4); }
+    .text-glow-sm { text-shadow: 0 0 10px rgba(0,229,255,0.6); }
+
+    .panel {
+      background: rgba(2,8,23,0.85);
+      border: 1px solid var(--cyan-border);
+      backdrop-filter: blur(12px);
+    }
+    .panel-header {
+      background: linear-gradient(90deg, rgba(0,229,255,0.15) 0%, transparent 100%);
+      border-bottom: 1px solid var(--cyan-border);
+    }
+
+    .skill-node { transition: all 0.3s ease; cursor: pointer; position: relative; }
+    .skill-node.locked { opacity: 0.35; cursor: not-allowed; filter: grayscale(1); }
+    .skill-node.available:hover { transform: scale(1.08); }
+    .skill-node.completed:hover { transform: scale(1.05); }
+
+    .connector {
+      width: 3px;
+      background: linear-gradient(180deg, rgba(0,229,255,0.5), rgba(0,229,255,0.1));
+      margin: 0 auto;
+    }
+    .connector.done { background: linear-gradient(180deg, #00e5ff, rgba(0,229,255,0.5)); }
+
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-box {
+      position: relative;
+      background: rgba(2,8,23,0.97);
+      border: 1px solid var(--cyan-border);
+      box-shadow: 0 0 60px rgba(0,229,255,0.25), inset 0 0 60px rgba(0,10,40,0.8);
+      max-width: 680px; width: 94vw;
+      animation: modalIn 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    .modal-box::before, .modal-box::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px;
+      border-color: var(--cyan); border-style: solid;
+    }
+    .modal-box::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .modal-box::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+    .corner-tl::before {
+      content: ''; position: absolute; top: -1px; left: -1px;
+      width: 14px; height: 14px;
+      border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan);
+    }
+    .corner-br::after {
+      content: ''; position: absolute; bottom: -1px; right: -1px;
+      width: 14px; height: 14px;
+      border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan);
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(-20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-cyan {
+      0%, 100% { box-shadow: 0 0 20px rgba(0,229,255,0.3); }
+      50%       { box-shadow: 0 0 40px rgba(0,229,255,0.7), 0 0 80px rgba(0,229,255,0.2); }
+    }
+    @keyframes questClear {
+      0%   { opacity: 0; transform: scale(0.8); }
+      40%  { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes xpBar { from { width: 0%; } }
+
+    .animate-fade { animation: fadeIn 0.4s ease both; }
+    .animate-pulse-cyan { animation: pulse-cyan 2.5s ease-in-out infinite; }
+    .animate-quest { animation: questClear 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+    .xp-fill { animation: xpBar 1s ease-out both; }
+
+    .sys-input {
+      background: rgba(0,229,255,0.05);
+      border: 1px solid var(--cyan-border);
+      color: #e2e8f0;
+      font-family: 'Share Tech Mono', monospace;
+      transition: all 0.2s;
+    }
+    .sys-input:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(0,229,255,0.2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(0,229,255,0.2), rgba(0,100,255,0.2));
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.25s;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, rgba(0,229,255,0.35), rgba(0,100,255,0.35));
+      box-shadow: 0 0 25px rgba(0,229,255,0.4);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-success {
+      background: linear-gradient(135deg, rgba(0,255,150,0.15), rgba(0,200,100,0.15));
+      border: 1px solid rgba(0,255,150,0.6);
+      color: #00ff96;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, rgba(0,255,150,0.3), rgba(0,200,100,0.3));
+      box-shadow: 0 0 25px rgba(0,255,150,0.3);
+    }
+
+    .theory-card {
+      background: rgba(0,20,60,0.6);
+      border: 1px solid rgba(0,150,255,0.3);
+      border-left: 3px solid var(--cyan);
+    }
+    .practice-card {
+      background: rgba(20,0,60,0.5);
+      border: 1px solid rgba(100,0,255,0.3);
+      border-left: 3px solid #a855f7;
+    }
+    .math-display {
+      font-family: 'Share Tech Mono', monospace;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 4px;
+      padding: 12px 16px;
+      color: #7dd3fc;
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .quest-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .quest-box {
+      background: rgba(0,229,255,0.08);
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 80px rgba(0,229,255,0.5), inset 0 0 40px rgba(0,229,255,0.05);
+      padding: 32px 64px;
+      animation: questClear 0.5s ease both;
+    }
+
+    .notif-header {
+      background: linear-gradient(180deg, rgba(0,229,255,0.2) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(0,229,255,0.3);
+    }
+    .notif-icon {
+      width: 42px; height: 42px;
+      border: 2px solid var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .notif-icon::before {
+      content: ''; position: absolute; inset: 4px;
+      background: rgba(0,229,255,0.15);
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid rgba(0,229,255,0.2);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #020817; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.3); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-radial"></div>
+  <div id="app" class="relative z-10 min-h-screen"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
